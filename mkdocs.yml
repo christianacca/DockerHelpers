@@ -1,0 +1,9 @@
+site_name: DockerHelpers
+repo_url: https://github.com/christianacca/DockerHelpers
+theme: readthedocs
+pages:
+  - Home: index.md
+  - DockerHelpers Basics:
+    - What is DockerHelpers: about.md
+    - Quick Start: Quick-Start-Installation-and-Example.md
+  - Acknowledgements: acknowledgements.md
