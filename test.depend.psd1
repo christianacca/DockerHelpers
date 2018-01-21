@@ -5,5 +5,5 @@
     }
     # Add the *exact versions* of any dependencies of your module...
     # EG:
-    'posh-docker'   = '0.7.1'
+    # 'posh-docker'   = '0.7.1'
 }

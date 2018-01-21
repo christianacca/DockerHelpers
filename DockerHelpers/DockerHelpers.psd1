@@ -51,9 +51,7 @@ Description = 'Cmdlets to extend and enhance the docker cli'
 # ProcessorArchitecture = ''
 
 # Modules that must be imported into the global environment prior to importing this module
-RequiredModules = @(
-    @{ModuleName='posh-docker'; ModuleVersion='0.7.1'; MaximumVersion = '0.7.1';}
-)
+# RequiredModules = @()
 
 # Assemblies that must be loaded prior to importing this module
 # RequiredAssemblies = @()

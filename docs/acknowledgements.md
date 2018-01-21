@@ -1,8 +1,12 @@
 I want to thank everyone that has submitted feedback, ideas and contributions to this project. Some individuals deserve a special thank you for helping make this project a success.
 
-## christianacca
+## Christian Crowhurst
 
-The original author of this project is christianacca. All of this was made possible by the effort christianacca put into getting this project off the ground and the many hours that were spent making everything work.
+The original author of this project is Christian Crowhurst. All of this was made possible by the effort christianacca put into getting this project off the ground and the many hours that were spent making everything work.
+
+## Sam Neirinck
+
+Author of `ConvertFrom-Docker` function (see [copywrite/MIT licence](https://github.com/samneirinck/posh-docker/blob/master/LICENSE))
 
 ## Kevin Marquette
 
