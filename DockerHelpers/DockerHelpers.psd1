@@ -24,7 +24,7 @@ GUID = 'a814cd38-38ff-445f-9aa8-e365157fd698'
 Author = 'christianacca'
 
 # Company or vendor of this module
-CompanyName = 'Unknown'
+CompanyName = ''
 
 # Copyright statement for this module
 Copyright = '(c) 2018 christianacca. All rights reserved.'
@@ -97,13 +97,13 @@ PrivateData = @{
     PSData = @{
 
         # Tags applied to this module. These help with module discovery in online galleries.
-        # Tags = @()
+        Tags = @('docker')
 
         # A URL to the license for this module.
-        # LicenseUri = ''
+        LicenseUri = 'https://github.com/christianacca/DockerHelpers/blob/master/LICENSE'
 
         # A URL to the main website for this project.
-        # ProjectUri = ''
+        ProjectUri = 'https://github.com/christianacca/DockerHelpers'
 
         # A URL to an icon representing this module.
         # IconUri = ''
