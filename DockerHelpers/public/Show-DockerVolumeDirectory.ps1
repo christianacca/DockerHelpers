@@ -58,10 +58,6 @@ function Show-DockerVolumeDirectory
     
     begin
     {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-
         if (!$PSBoundParameters.ContainsKey('Interactive'))
         {
             $Interactive = $true
@@ -97,44 +93,30 @@ function Show-DockerVolumeDirectory
     
     process
     {
-        try
+        $volumes += switch ($PSCmdlet.ParameterSetName)
         {
-            $volumes += switch ($PSCmdlet.ParameterSetName)
-            {
-                'Name'
-                { 
-                    Get-DockerVolume -Name $Name
-                }
-                'Volume'
-                {
-                    $InputObject
-                }
-                'List'
-                {
-                    Get-DockerVolume
-                }
-                Default
-                {
-                    throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"
-                }
+            'Name'
+            { 
+                Get-DockerVolume -Name $Name
             }
-        }
-        catch
-        {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            'Volume'
+            {
+                $InputObject
+            }
+            'List'
+            {
+                Get-DockerVolume
+            }
+            Default
+            {
+                throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"
+            }
         }
     }
 
     end
     {
-        try
-        {
-            $volumes | Sort-Object Mountpoint -Unique | ForEach-Object $showDirectory
-        }
-        catch
-        {
-            Write-Error -ErrorRecord $_ -EA $callerEA
-        }
+        $volumes | Sort-Object Mountpoint -Unique | ForEach-Object $showDirectory
     }
 }
 

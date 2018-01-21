@@ -72,75 +72,57 @@ function Show-DockerContainerGridView
     
     begin
     {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-
         $items = @()
     }
     
     process
     {
-        try
-        {           
-            $items += if ($InputObject) 
-            {
-                $InputObject
-            }
-            else
-            {
-                Get-DockerContainer -All:$All
-            }
-        }
-        catch
+        $items += if ($InputObject) 
         {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            $InputObject
+        }
+        else
+        {
+            Get-DockerContainer -All:$All
         }
     }
 
     end
     {
-        try
+        $title = 'docker container(s)'
+        if (!$All)
         {
-            $title = 'docker container(s)'
-            if (!$All)
-            {
-                $title = "RUNNING $title"
-            }
-            if ($PassThru)
-            {
-                $title = "Select $title; tip: hold down CTRL button for multi-select"
-            }
-
-            $outputMode = if ($PassThru)
-            {
-                'Multiple'
-            }
-            else
-            {
-                'None'
-            }
-
-            $selected = if ($PassThru -and !$Force -and $items.Count -eq 1)
-            {
-                $items
-            }
-            else
-            {
-                $items |
-                    Sort-Object Name -Unique | Sort-Object Image, Name |
-                    Out-GridView -Title $title -OutputMode $outputMode
-            }
-
-            if ($PassThru)
-            {
-                $selected | Select-Object -Exp Name | Get-DockerContainer -Inspect:$Inspect
-            }            
+            $title = "RUNNING $title"
         }
-        catch
+        if ($PassThru)
         {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            $title = "Select $title; tip: hold down CTRL button for multi-select"
         }
+
+        $outputMode = if ($PassThru)
+        {
+            'Multiple'
+        }
+        else
+        {
+            'None'
+        }
+
+        $selected = if ($PassThru -and !$Force -and $items.Count -eq 1)
+        {
+            $items
+        }
+        else
+        {
+            $items |
+                Sort-Object Name -Unique | Sort-Object Image, Name |
+                Out-GridView -Title $title -OutputMode $outputMode
+        }
+
+        if ($PassThru)
+        {
+            $selected | Select-Object -Exp Name | Get-DockerContainer -Inspect:$Inspect
+        }   
     }
 }
 

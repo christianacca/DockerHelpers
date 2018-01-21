@@ -67,43 +67,25 @@ function Show-DockerContainerVolumeGridView
     
     begin
     {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-
         $items = @()
     }
     
     process
     {
-        try
+        $items += if ($InputObject)
         {
-            $items += if ($InputObject)
-            {
-                $InputObject
-            }
-            else
-            {
-                Get-DockerContainer -All:$All
-            }
+            $InputObject
         }
-        catch
+        else
         {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            Get-DockerContainer -All:$All
         }
     }
     end
     {
-        try
-        {
-            $items | Show-DockerContainerGridView -Force -PassThru |
-                Get-DockerVolume | 
-                Show-DockerVolumeGridView -Force:$Force -PassThru:$PassThru
-        }
-        catch
-        {
-            Write-Error -ErrorRecord $_ -EA $callerEA
-        }
+        $items | Show-DockerContainerGridView -Force -PassThru |
+            Get-DockerVolume | 
+            Show-DockerVolumeGridView -Force:$Force -PassThru:$PassThru
     }
 }
 

@@ -50,70 +50,52 @@ function Show-DockerVolumeGridView
     
     begin
     {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-
         $items = @()
     }
     
     process
     {
-        try
+        $items += if ($InputObject) 
         {
-            $items += if ($InputObject) 
-            {
-                $InputObject
-            }
-            else
-            {
-                Get-DockerVolume
-            }
+            $InputObject
         }
-        catch
+        else
         {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            Get-DockerVolume
         }
     }
     end
     {
-        try
+        $title = 'docker volume(s)'
+        if ($PassThru)
         {
-            $title = 'docker volume(s)'
-            if ($PassThru)
-            {
-                $title = "Select $title; tip: hold down CTRL button for multi-select"
-            }
-
-            $outputMode = if ($PassThru)
-            {
-                'Multiple'
-            }
-            else
-            {
-                'None'
-            }
-
-            $selected = if ($PassThru -and !$Force -and $items.Count -eq 1)
-            {
-                $items
-            }
-            else
-            {
-                $items |
-                    Sort-Object Name -Unique |
-                    Select-Object Name, Driver, MountPoint |
-                    Out-GridView -Title $title -OutputMode $outputMode
-            }
-
-            if ($PassThru)
-            {
-                $selected | ForEach-Object { Get-DockerVolume ($_.Name) }
-            }  
+            $title = "Select $title; tip: hold down CTRL button for multi-select"
         }
-        catch
+
+        $outputMode = if ($PassThru)
         {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            'Multiple'
+        }
+        else
+        {
+            'None'
+        }
+
+        $selected = if ($PassThru -and !$Force -and $items.Count -eq 1)
+        {
+            $items
+        }
+        else
+        {
+            $items |
+                Sort-Object Name -Unique |
+                Select-Object Name, Driver, MountPoint |
+                Out-GridView -Title $title -OutputMode $outputMode
+        }
+
+        if ($PassThru)
+        {
+            $selected | ForEach-Object { Get-DockerVolume ($_.Name) }
         }
     }
 }

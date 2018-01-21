@@ -78,70 +78,56 @@ function Get-DockerContainer
         [switch] $Inspect
     )
     
-    begin
-    {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-    }
-    
     process
     {
-        try
+        $candidateNames = if ($All -or $PSCmdlet.ParameterSetName -eq 'Name')
         {
-            $candidateNames = if ($All -or $PSCmdlet.ParameterSetName -eq 'Name')
-            {
-                docker container ls -a --format '{{.Names}}'
-            }
-            else
-            {
-                docker container ls --format '{{.Names}}'
-            }
+            docker container ls -a --format '{{.Names}}'
+        }
+        else
+        {
+            docker container ls --format '{{.Names}}'
+        }
 
-            $matchedNames = switch ($PSCmdlet.ParameterSetName)
-            {
-                'List' 
-                { 
-                    $candidateNames
-                }
-                'Name' 
-                { 
-                    $Name | ForEach-Object {
-                        $currentName = $_
-                        $criteria = if ($currentName -match '\*')
-                        {
-                            { $_ -like $currentName }
-                        }
-                        else
-                        {
-                            { $_ -eq $currentName }
-                        }
-                        $candidateNames | Where-Object $criteria
-                    } | Select-Object -Unique
-                }
-                Default 
-                {
-                    throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"
-                }
-            }
-            $containers = if ($Inspect)
-            {
-                $matchedNames |
-                    ForEach-Object { [PsCustomObject](docker container inspect $_ | ConvertFrom-Json) } |
-                    Select-Object -ExcludeProperty Name -Property @{n = 'Name'; e = { $_.Name.TrimStart('/')}}, *
-            }
-            else
-            {
-                docker container ls -a | ConvertFrom-Docker |
-                    Where-Object { $_.Names -in $matchedNames } |
-                    Select-Object -ExcludeProperty Names, Command -Property @{n = 'Name'; e = { $_.Names}}, *
-            }
-            $containers
-        }
-        catch
+        $matchedNames = switch ($PSCmdlet.ParameterSetName)
         {
-            Write-Error -ErrorRecord $_ -EA $callerEA
+            'List' 
+            { 
+                $candidateNames
+            }
+            'Name' 
+            { 
+                $Name | ForEach-Object {
+                    $currentName = $_
+                    $criteria = if ($currentName -match '\*')
+                    {
+                        { $_ -like $currentName }
+                    }
+                    else
+                    {
+                        { $_ -eq $currentName }
+                    }
+                    $candidateNames | Where-Object $criteria
+                } | Select-Object -Unique
+            }
+            Default 
+            {
+                throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"
+            }
         }
+        $containers = if ($Inspect)
+        {
+            $matchedNames |
+                ForEach-Object { [PsCustomObject](docker container inspect $_ | ConvertFrom-Json) } |
+                Select-Object -ExcludeProperty Name -Property @{n = 'Name'; e = { $_.Name.TrimStart('/')}}, *
+        }
+        else
+        {
+            docker container ls -a | ConvertFrom-Docker |
+                Where-Object { $_.Names -in $matchedNames } |
+                Select-Object -ExcludeProperty Names, Command -Property @{n = 'Name'; e = { $_.Names}}, *
+        }
+        $containers
     }
 }
 

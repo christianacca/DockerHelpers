@@ -45,7 +45,7 @@ function Get-DockerContainerIP
     [CmdletBinding(DefaultParameterSetName = 'List')]
     [OutputType('System.Management.Automation.PSCustomObject')]
     param (
-        [Parameter(Mandatory, ParameterSetName = 'Name', Position=0)]
+        [Parameter(Mandatory, ParameterSetName = 'Name', Position = 0)]
         [SupportsWildcards()]
         [string[]]$Name,
 
@@ -56,42 +56,31 @@ function Get-DockerContainerIP
         [PSCustomObject]$InputObject
     )
     
-    begin
-    {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-    }
-    
     process
     {
-        try
+        $containers = switch ($PSCmdlet.ParameterSetName)
         {
-            $containers = switch ($PSCmdlet.ParameterSetName)
+            'Name' { Get-DockerContainer -Name $Name -Inspect }
+            'List' { Get-DockerContainer -Inspect }
+            'Container'
             {
-                'Name' { Get-DockerContainer -Name $Name -Inspect }
-                'List' { Get-DockerContainer -Inspect }
-                'Container' {
-                    if ($InputObject.PsObject.Properties.Name -notcontains 'NetworkSettings') {
-                        Get-DockerContainer -Name ($InputObject.Name) -Inspect
-                    } else {
-                        $InputObject
-                    }
+                if ($InputObject.PsObject.Properties.Name -notcontains 'NetworkSettings')
+                {
+                    Get-DockerContainer -Name ($InputObject.Name) -Inspect
                 }
-                Default { throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"}
+                else
+                {
+                    $InputObject
+                }
             }
-
-            $containers | Select-Object -PV container |
-                Select-Object -Exp NetworkSettings | 
-                Select-Object -Exp Networks | 
-                Select-Object -Exp * |
-                Select-Object @{n = 'Name'; e = {$container.Name}}, IPAddress
-
+            Default { throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"}
         }
-        catch
-        {
-            Write-Error -ErrorRecord $_ -EA $callerEA
-        }
+
+        $containers | Select-Object -PV container |
+            Select-Object -Exp NetworkSettings | 
+            Select-Object -Exp Networks | 
+            Select-Object -Exp * |
+            Select-Object @{n = 'Name'; e = {$container.Name}}, IPAddress
     }
 }
 

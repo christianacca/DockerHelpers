@@ -63,68 +63,54 @@ function Get-DockerVolume
         [PSCustomObject]$Container
     )
     
-    begin
-    {
-        Set-StrictMode -Version 'Latest'
-        $callerEA = $ErrorActionPreference
-        $ErrorActionPreference = 'Stop'
-    }
-    
     process
     {
-        try
+        $selectVolumeName = { $_ | Select-Object -Exp Mounts | Select-Object -Exp Name }
+        $getAllVolumeNames = { docker volume ls --format '{{.Name}}' }
+        $volumes = switch ($PSCmdlet.ParameterSetName)
         {
-            $selectVolumeName = { $_ | Select-Object -Exp Mounts | Select-Object -Exp Name }
-            $getAllVolumeNames = { docker volume ls --format '{{.Name}}' }
-            $volumes = switch ($PSCmdlet.ParameterSetName)
+            'List'
+            { 
+                & $getAllVolumeNames
+            }
+            'Name'
             {
-                'List'
-                { 
-                    & $getAllVolumeNames
-                }
-                'Name'
-                {
-                    $allNames = & $getAllVolumeNames
-                    $Name | ForEach-Object {
-                        $currentName = $_
-                        $criteria = if ($currentName -match '\*')
-                        {
-                            { $_ -like $currentName }
-                        }
-                        else
-                        {
-                            { $_ -eq $currentName }
-                        }
-                        $allNames | Where-Object $criteria
-                    } | Select-Object -Unique
-                }
-                'ContainerName'
-                {
-                    Get-DockerContainer -Name $ContainerName -Inspect | ForEach-Object $selectVolumeName
-                }
-                'Container'
-                {
-                    $Container = if ($Container.PsObject.Properties.Name -notcontains 'Mounts')
+                $allNames = & $getAllVolumeNames
+                $Name | ForEach-Object {
+                    $currentName = $_
+                    $criteria = if ($currentName -match '\*')
                     {
-                        Get-DockerContainer -Name ($Container.Name) -Inspect
+                        { $_ -like $currentName }
                     }
                     else
                     {
-                        $Container
+                        { $_ -eq $currentName }
                     }
-                    $Container | ForEach-Object $selectVolumeName
-                }
-                Default
-                {
-                    throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"
-                }
+                    $allNames | Where-Object $criteria
+                } | Select-Object -Unique
             }
-            $volumes | ForEach-Object { [PsCustomObject](docker volume inspect $_ | ConvertFrom-Json) }
+            'ContainerName'
+            {
+                Get-DockerContainer -Name $ContainerName -Inspect | ForEach-Object $selectVolumeName
+            }
+            'Container'
+            {
+                $Container = if ($Container.PsObject.Properties.Name -notcontains 'Mounts')
+                {
+                    Get-DockerContainer -Name ($Container.Name) -Inspect
+                }
+                else
+                {
+                    $Container
+                }
+                $Container | ForEach-Object $selectVolumeName
+            }
+            Default
+            {
+                throw "ParameterSet '$PSCmdlet.ParameterSetName' not implemented"
+            }
         }
-        catch
-        {
-            Write-Error -ErrorRecord $_ -EA $callerEA
-        }
+        $volumes | ForEach-Object { [PsCustomObject](docker volume inspect $_ | ConvertFrom-Json) }
     }
 }
 
