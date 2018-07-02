@@ -101,14 +101,13 @@ Describe 'Wait-DockerContainerStatus' -Tags Build {
         $before = Get-Date
 
         # when
-        [System.Management.Automation.ErrorRecord] $ex = $null
+        $ex = $null
         try {
             Wait-DockerContainerStatus some-container exited -Timeout 1 -EA Stop -Verbose
         }
         catch {
             $ex = $_
         }
-
         
         # then...
         # note: docker commands take sooooo long on my w10 PC therefore need to use large tolarance (ie 8 seconds)
@@ -148,6 +147,28 @@ Describe 'Wait-DockerContainerStatus' -Tags Build {
 
         # then
         (Get-DockerContainer some-container -Inspect).State.Health.Status | Should -Be 'unhealthy'
+    }
+    
+    It "Wait for 'healthy' should fail fast when container unhealthy" {
+        # given
+        docker run -d --name some-container `
+            --health-cmd 'cmd /S /C exit 1' --health-interval 1s --health-start-period 1s `
+            microsoft/nanoserver ping localhost -t
+        $before = Get-Date
+
+        $ex = $null
+        try {
+            # when
+            Wait-DockerContainerStatus some-container healthy -EA Stop -Verbose
+        }
+        catch {
+            $ex = $_
+        }
+        
+        # then...
+        # note: docker commands take sooooo long on my w10 PC therefore need to use large tolarance (ie 8 seconds)
+        ($before).AddSeconds(8) | Should -BeGreaterThan (Get-Date)
+        $ex.ToString() | Should -BeLike "Waited status not achievable (desired 'healthy')"
     }
     
     It "Wait for 'unhealthy' or 'healthy'" {

@@ -64,6 +64,14 @@ function Wait-DockerContainerStatus
 
         $healthStates = 'healthy', 'unhealthy'
         $healthStatus = $Status | Where-Object { $healthStates -contains $_ }
+
+        $getContainerStatusString = {
+            $result = "{0}:{1}" -f $_.Name, $_.Status
+            if ($_.Health) {
+                $result = '{0} ({1})' -f $result, $_.Health
+            }
+            $result
+        }
     }
     
     process
@@ -71,24 +79,16 @@ function Wait-DockerContainerStatus
         $names = @()
         $names += $Name | Select-Object -Unique
 
-        $statusPredicate = {
-            $_.State.Status -in $Status -or ($_.State.Health -and $_.State.Health.Status -in $healthStatus)
-        }
-
         while ($true) {
-            $container = @(Get-DockerContainer $Name -Inspect)
-            $container | ForEach-Object {
-                $debugInfo = "{0}:{1}" -f $_.Name, $_.State.Status
-                if ($_.State.Health) {
-                    $debugInfo = '{0} ({1})' -f $debugInfo, $_.State.Health.Status
-                }
-                Write-Verbose $debugInfo
-            }
-            $matching = @($container | Where-Object $statusPredicate)
+            $container = @(Get-DockerContainerStatus $Name)
+            $container | ForEach-Object $getContainerStatusString | Write-Verbose
+            $matching = @($container | Where-Object  { $_.Status -in $Status -or $_.Health -in $healthStatus } )
             if ($names.Count -eq $matching.Count) {
                 break
             } elseif ((Get-Date) -ge $timeToWait) {
-                throw "Timeout exceeded waiting on container (status required: $Status)"
+                throw "Timeout exceeded waiting on container (desired status: $Status)"
+            } elseif ('healthy' -eq $Status -and ($container | Where-Object Health -eq unhealthy)) {
+                throw "Waited status not achievable (desired 'healthy')"
             }
             Start-Sleep -Seconds $Interval
         }
