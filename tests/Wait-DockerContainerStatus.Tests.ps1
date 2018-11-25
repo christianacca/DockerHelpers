@@ -56,7 +56,7 @@ Describe 'Wait-DockerContainerStatus' -Tags Build {
             $stopJob | Wait-Job
         }
     }
-    
+
     It 'Waiting for more than one status... should return when any status found' {
         # given
         $runContainer = Start-Job {
@@ -114,14 +114,6 @@ Describe 'Wait-DockerContainerStatus' -Tags Build {
         ($before).AddSeconds(8) | Should -BeGreaterThan (Get-Date)
         $ex.ToString() | Should -BeLike 'Timeout exceeded*'
     }
-    
-    It '-Name with wildcard should throw' {
-        # given
-        docker run -d --name some-container microsoft/nanoserver ping localhost -t
-
-        # when, then...
-        { Wait-DockerContainerStatus some-container* exited } | Should throw
-    }
 
     It "Wait for 'healthy'" {
         # given
@@ -167,7 +159,7 @@ Describe 'Wait-DockerContainerStatus' -Tags Build {
         
         # then...
         # note: docker commands take sooooo long on my w10 PC therefore need to use large tolarance (ie 8 seconds)
-        ($before).AddSeconds(8) | Should -BeGreaterThan (Get-Date)
+        ($before).AddSeconds(15) | Should -BeGreaterThan (Get-Date)
         $ex.ToString() | Should -BeLike "Waited status not achievable (desired 'healthy')"
     }
     
@@ -182,5 +174,82 @@ Describe 'Wait-DockerContainerStatus' -Tags Build {
 
         # then
         (Get-DockerContainer some-container -Inspect).State.Health.Status | Should -Be 'unhealthy'
+    }
+}
+
+
+Describe 'Wait-DockerContainerStatus (wildcard)' -Tags Build {
+
+    function RemoveContainers {
+        Get-DockerContainer some-container-* | Select-Object -Exp Name | ForEach-Object {
+            docker container rm -f $_
+        }
+    }
+
+    BeforeAll {
+        Unload-SUT
+        Import-Module ($global:SUTPath)
+
+        # given
+        docker pull microsoft/nanoserver
+
+        $script:runHealthCheckedContainer = {
+            param([int] $Count = 1)
+            1..$Count | ForEach-Object {
+                docker run -d --name "some-container-$_" `
+                    --health-cmd 'cmd /S /C exit 0' --health-interval 5s --health-start-period 10s `
+                    microsoft/nanoserver ping localhost -t
+            }
+        }
+    }
+
+    AfterAll {
+        Unload-SUT
+    }
+
+    AfterEach { RemoveContainers }
+    BeforeEach { RemoveContainers }
+
+    It "Wait for 'healthy' (one container)" {
+        # given
+        & $runHealthCheckedContainer -Count 1
+
+        # when
+        Wait-DockerContainerStatus some-container-* healthy -Verbose
+
+        # then
+        (Get-DockerContainer some-container-1 -Inspect).State.Health.Status | Should -Be 'healthy'
+    }
+
+    It "Wait for 'healthy' (multiple containers)" -Skip {
+
+        # TODO: support (then remove -Skip)
+
+        # given
+        & $runHealthCheckedContainer -Count 2
+
+        # when
+        Wait-DockerContainerStatus some-container-* healthy -Verbose
+
+        # then
+        Get-DockerContainer some-container-* -Inspect | ? { $_.State.Health.Status -eq 'healthy' } |
+            Should -Not -BeNullOrEmpty
+    }
+
+    It "Wait for already 'healthy' containers (multiple containers)" -Skip {
+
+        # TODO: support (then remove -Skip)
+
+        # given
+        & $runHealthCheckedContainer -Count 2
+        Wait-DockerContainerStatus some-container-1 healthy -Verbose
+        Wait-DockerContainerStatus some-container-2 healthy -Verbose
+
+        # when
+        Wait-DockerContainerStatus some-container-* healthy -Verbose
+
+        # then
+        (Get-DockerContainer some-container-1 -Inspect).State.Health.Status | Should -Be 'healthy'
+        (Get-DockerContainer some-container-2 -Inspect).State.Health.Status | Should -Be 'healthy'
     }
 }

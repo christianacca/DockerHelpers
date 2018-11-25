@@ -33,6 +33,7 @@ function Wait-DockerContainerStatus
     [CmdletBinding()]
     param (
         [Parameter(Mandatory)]
+        [SupportsWildcards()]
         [string[]]$Name,
 
         [Parameter(Mandatory)]
@@ -51,9 +52,12 @@ function Wait-DockerContainerStatus
         # * wait for any container with the required status or all containers whose
         #   name matches at the start of the wait?
         # * should created status be treated differently from other status?
-        if ($Name -match '\*') {
-            throw "Name parameter does not support wildcards"
-        }
+        
+        # IMPORTANT: we are NOT correctly supporting wildcards just be commenting out the code below!
+        # The wait will likely fail when a wildcard matches more than one container
+        # if ($Name -match '\*') {
+        #     throw "Name parameter does not support wildcards"
+        # }
 
         $timeToWait = if ($Timeout -eq 0) {
             # ie never timeout!
