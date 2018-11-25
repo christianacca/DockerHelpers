@@ -3,7 +3,7 @@ $moduleRoot = $env:BHModulePath
 
 Describe "PSScriptAnalyzer rule-sets" -Tag Build {
 
-    $rulesToExclude = @('PSUseToExportFieldsInManifest')
+    $rulesToExclude = @('PSUseToExportFieldsInManifest', 'PSAvoidTrailingWhitespace')
     $Rules = Get-ScriptAnalyzerRule | where RuleName -NotIn $rulesToExclude
     $scripts = Get-ChildItem $moduleRoot -Include *.ps1, *.psm1, *.psd1 -Recurse | where fullname -notmatch 'classes'
 
